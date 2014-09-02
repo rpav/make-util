@@ -107,7 +107,7 @@ your projects, e.g.:
 (make-util '(...) :package 'util.rpav :symbols '(...))
 ```
 
-Using e.g. "UTIL.<github-name>" or something is probably a nice way to
+Using e.g. "UTIL.*github-name*" or something is probably a nice way to
 go.  If two of your projects both have the same utility function(s)
 defined, they can share code.
 
