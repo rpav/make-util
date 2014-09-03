@@ -23,6 +23,7 @@ Features:
 * Includes compiler macros if defined.
 * Basic deduplication, so you can use one package across projects.
 * Package definition and optional symbol export.
+* Basic recursive support for dependencies
 
 **Not** features:
 
@@ -64,6 +65,29 @@ them (i.e. `#'symbol`), or similar, `make-util` will figure it out.
 You're done.  You've got a `util.lisp` file with the utilities you
 selected.  Similar to QuickUtil, at the top is the command you can use
 to refresh or update the file.
+
+### Dependencies
+
+There is basic support for dependencies.  These can't be trivially
+determined by looking at the code, so you must specify them:
+
+```lisp
+(defun some-function ...)
+
+(defun some-util (...)
+  ...
+  (some-function ...))
+
+#+make-util (make-util:util-depends 'some-util 'some-function ...)
+```
+
+Then if you use `make-util` on `some-util`, it will also pull in
+`some-function`.  It will do this recursively for any dependencies
+you've specified.
+
+Note the `*feature*`, which lets you load things without `make-util`.
+This is probably useful since you don't want everything depending on
+`make-util` (or at least, I don't!).
 
 ## Notes and Details
 

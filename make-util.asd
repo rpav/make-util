@@ -17,3 +17,6 @@
   ((:file "package")
    (:file "util")
    (:file "make-util")))
+
+(defmethod perform :after ((op load-op) (c (eql (find-system :make-util))))
+  (pushnew :make-util *features*))

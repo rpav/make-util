@@ -50,6 +50,8 @@
   (if (listp source)
       (unless (or (member (car source)
                           '(defun defmacro define-compiler-macro))
+                  (member (car source)
+                          (gethash name *util-depends*))
                   (member (car source) symbols))
         (warn "Symbol ~S possibly defined by a macro that's not included (~S)"
               name (car source)))
@@ -59,28 +61,37 @@ may have been modified." name)))
 (defun write-sources (stream symbols &key exportp)
   "Write source for each symbol in SYMBOLS to STREAM"
   (loop for s in symbols
-        do (multiple-value-bind (source compiler-macro-source)
-               (read-source s)
-             (maybe-warn-about s source symbols)
-             (let ((actual-source
-                     `(eval-when (:compile-toplevel :load-toplevel :execute)
-                        (unless (fboundp ',(intern (symbol-name s)))
-                         ,source
-                         ,@(when (and compiler-macro-source
-                                      (not (equal source compiler-macro-source)))
-                             (list compiler-macro-source))))))
-               (pprint-source actual-source stream))
-             (fresh-line stream)
-             (when exportp
-               (pprint-source `(export ',(intern (symbol-name s))) stream)
-               (fresh-line stream)))))
+        do (unless (member s *all-symbols*)
+             (push s *all-symbols*)
+             (when-let (other-sources (gethash s *util-depends*))
+               (write-sources stream other-sources :exportp exportp))
+             (multiple-value-bind (source compiler-macro-source)
+                 (read-source s)
+               (maybe-warn-about s source symbols)
+               (let ((actual-source
+                       `(eval-when (:compile-toplevel :load-toplevel :execute)
+                          (unless (fboundp ',(intern (symbol-name s)))
+                            ,source
+                            ,@(when (and compiler-macro-source
+                                         (not (equal source compiler-macro-source)))
+                                (list compiler-macro-source))))))
+                 (pprint-source actual-source stream))
+               (fresh-line stream)
+               (when exportp
+                 (pprint-source `(export ',(intern (symbol-name s))) stream)
+                 (fresh-line stream))))))
 
-(defun make-util (filename &key symbols (package *package*) (exportp t))
+(defun make-util (filename-or-asdf &key symbols (package *package*) (exportp t))
   (let ((actual-filename
-          (if (listp filename)
-              (apply #'asdf-path filename)
-              filename)))
+          (if (listp filename-or-asdf)
+              (apply #'asdf-path filename-or-asdf)
+              filename-or-asdf)))
     (with-open-file (s actual-filename :direction :output :if-exists :supersede)
       (let ((*package* (find-package package)))
-        (write-header s filename symbols package exportp)
-        (write-sources s symbols :exportp exportp)))))
+        (write-header s filename-or-asdf symbols package exportp)
+        (let (*all-symbols*)
+          (write-sources s symbols :exportp exportp))))))
+
+(defun util-depends (util-name &rest other-symbols)
+  (setf (gethash util-name *util-depends*)
+        (copy-list other-symbols)))
