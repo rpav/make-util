@@ -41,7 +41,7 @@
 ;; ===================================================================
 \(eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package ~S)
-    (make-package ~S :use nil)))
+    (make-package ~S :use '(#:cl))))
 \(in-package ~S)
 " package package package)
     (fresh-line stream)))
