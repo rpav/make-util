@@ -3,13 +3,16 @@
 
 (in-package :make-util.asdf)
 
+#-(or swank slynk)
+(error "You must have SLIME/SWANK or SLY/SLYNK loaded.")
+
 (defsystem :make-util
   :description "Trivially generate a util.lisp from arbitrary local functions"
   :author "Ryan Pavlik"
   :license "BSD"
   :version "0.0"
 
-  :depends-on (:alexandria :swank)
+  :depends-on (:alexandria)
   :pathname "src"
   :serial t
 

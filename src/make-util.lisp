@@ -1,7 +1,11 @@
 (in-package :make-util)
 
 (defun read-function-source (fun)
-  (let ((spec (swank-backend:find-source-location fun)))
+  (let ((spec
+          #+swank
+          (swank-backend:find-source-location fun)
+          #+slynk
+          (slynk-backend:find-source-location fun)))
     (when spec
       (let ((file (cadr (assoc :file (cdr spec))))
             (pos (cadr (assoc :position (cdr spec)))))
