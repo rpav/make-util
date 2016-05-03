@@ -13,10 +13,10 @@
           (file-position s (1- pos))
           (read s))))))
 
-(defun read-source (symbol)
-  (let ((macro (macro-function symbol))
-        (fun (symbol-function symbol))
-        (compiler-macro (compiler-macro-function symbol)))
+(defun read-source (thing)
+  (let ((macro (when (symbolp thing) (macro-function thing)))
+        (fun (fdefinition thing))
+        (compiler-macro (compiler-macro-function thing)))
     (if macro
         (read-function-source macro)
         (values (read-function-source fun)
@@ -74,14 +74,16 @@ may have been modified." name)))
                (maybe-warn-about s source symbols)
                (let ((actual-source
                        `(eval-when (:compile-toplevel :load-toplevel :execute)
-                          (unless (fboundp ',(intern (symbol-name s)))
+                          (unless (fboundp ',(if (symbolp s)
+                                                 (intern (symbol-name s))
+                                                 s))
                             ,source
                             ,@(when (and compiler-macro-source
                                          (not (equal source compiler-macro-source)))
                                 (list compiler-macro-source))))))
                  (pprint-source actual-source stream))
                (fresh-line stream)
-               (when exportp
+               (when (and exportp (symbolp s))
                  (pprint-source `(export ',(intern (symbol-name s))) stream)
                  (fresh-line stream))))))
 
